@@ -1,5 +1,6 @@
 """Search TVmaze for TV shows and summarise episode ratings per season."""
 import json
+import logging
 from pathlib import Path
 
 import requests
@@ -12,6 +13,17 @@ with open(CONFIG_FILE) as f:
 
 API = "https://api.tvmaze.com"
 TIMEOUT = 10  # seconds to wait for TVmaze before giving up
+
+# the log file, next to this file: every search, and anything that goes wrong
+LOG_FILE = Path(__file__).with_name("searches.log")
+
+
+def setup_logging():
+    logging.basicConfig(
+        filename=LOG_FILE,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
 
 MENU = """
 1. Search for a show
@@ -28,13 +40,17 @@ def get_json(path, params=None):
     """GET one TVmaze endpoint. Returns the JSON, or None for 'not found'."""
     try:
         response = requests.get(f"{API}{path}", params=params, timeout=TIMEOUT)
-    except requests.RequestException:
+    except requests.RequestException as error:
+        logging.error(f"Could not reach TVmaze for {path}: {type(error).__name__}")
         raise TVMazeError("Could not reach TVmaze. Check your internet connection.")
     if response.status_code == 404:
+        logging.warning(f"TVmaze found nothing at {path} (HTTP 404)")
         return None
     if response.status_code == 429:
+        logging.error(f"TVmaze rate limit hit for {path} (HTTP 429)")
         raise TVMazeError("TVmaze is limiting requests. Wait a few seconds and try again.")
     if response.status_code != 200:
+        logging.error(f"TVmaze returned HTTP {response.status_code} for {path}")
         raise TVMazeError(f"TVmaze returned an error (HTTP {response.status_code}).")
     return response.json()
 
@@ -95,8 +111,10 @@ def show_search():
     query = input(f"Show name (press Enter for '{default}'): ").strip()
     if not query:
         query = default
+    logging.info(f"Searching for TV show: {query}")
     shows = search_shows(query, CONFIG["search_limit"])
     if not shows:
+        logging.warning(f"No shows found for: {query}")
         print(f"No shows found for '{query}'.")
         return
     print(f"\n{'ID':>6}  {'Year':<4}  {'Rating':>6}  Name")
@@ -108,8 +126,10 @@ def show_search():
 def show_season_ratings():
     text = input("Show ID: ").strip()
     if not text.isdigit():
+        logging.warning(f"Invalid show ID entered: {text!r}")
         print("The show ID must be a number, for example 431.")
         return
+    logging.info(f"Getting ratings for show ID: {text}")
     show = get_show(int(text))
     if show is None:
         print(f"No show has ID {text}.")
@@ -126,6 +146,8 @@ def show_season_ratings():
 
 
 def main():
+    setup_logging()
+    logging.info("App started")
     print("TV show search. Data from TVmaze (tvmaze.com).")
     while True:
         print(MENU)
@@ -140,10 +162,15 @@ def main():
             else:
                 print("Please choose 1, 2 or 3.")
         except TVMazeError as error:
-            print(error)
+            print(error)                    # already logged where it happened
         except (EOFError, KeyboardInterrupt):
             print()
             break
+        except Exception:
+            # anything unexpected: the full details go to the log
+            logging.exception("Unexpected error")
+            print(f"Something unexpected went wrong. Details are in {LOG_FILE.name}.")
+    logging.info("App closed")
 
 
 if __name__ == "__main__":

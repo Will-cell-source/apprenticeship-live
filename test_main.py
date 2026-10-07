@@ -1,3 +1,4 @@
+import logging
 from unittest import mock
 
 import pytest
@@ -63,6 +64,23 @@ def test_the_search_lists_as_many_results_as_search_limit_in_config():
             mock.patch("main.search_shows", return_value=[]) as search:
         main.show_search()
     search.assert_called_once_with("friends", 3)
+
+
+def test_each_search_is_logged_as_info(caplog):
+    with caplog.at_level(logging.INFO), \
+            mock.patch("builtins.input", return_value="lassie"), \
+            mock.patch("main.search_shows", return_value=[]):
+        main.show_search()
+    assert ("INFO", "Searching for TV show: lassie") in [
+        (r.levelname, r.getMessage()) for r in caplog.records]
+
+
+def test_a_failed_request_is_logged_as_an_error(caplog):
+    with mock.patch("main.requests.get", return_value=fake_response(status=500)):
+        with pytest.raises(main.TVMazeError):
+            main.search_shows("friends")
+    assert ("ERROR", "TVmaze returned HTTP 500 for /search/shows") in [
+        (r.levelname, r.getMessage()) for r in caplog.records]
 
 
 def test_an_unknown_show_id_is_none():
