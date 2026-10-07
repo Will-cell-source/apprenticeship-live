@@ -5,7 +5,7 @@ Scratch space for hands-on coding during the live apprenticeship training sessio
 .venv\Scripts\python -m pytest
 ```
 
-`test_errors.py` checks every type of problem the app can meet: the log level it is recorded at, what you see, and whether it is sent to Make.
+`test_errors.py` checks every type of problem the app can meet: the log level it is recorded at, what you see, and whether it is sent to Make. `trigger_random_error.py` makes one of those errors happen for real, at random (only TVmaze is faked), so you can watch the log line and the Make email arrive.
 
 Settings are in `config.json`: `default_query` (the show searched when you press Enter) and `search_limit` (how many results the search lists).
 
