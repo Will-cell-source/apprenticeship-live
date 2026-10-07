@@ -1,0 +1,4 @@
+{
+  "api_url": "https://api.tvmaze.com",
+  "default_query": "friends"
+}

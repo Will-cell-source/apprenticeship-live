@@ -49,6 +49,22 @@ def test_search_shows_returns_the_top_five_with_id_year_and_rating():
     assert shows[1]["year"] == "1994"
 
 
+def test_requests_go_to_the_api_url_in_config():
+    with mock.patch.dict(main.CONFIG, {"api_url": "https://example.test"}), \
+            mock.patch("main.requests.get",
+                       return_value=fake_response(data=[])) as get:
+        main.search_shows("friends")
+    assert get.call_args.args[0] == "https://example.test/search/shows"
+
+
+def test_an_empty_search_uses_the_default_query_in_config():
+    with mock.patch.dict(main.CONFIG, {"default_query": "the office"}), \
+            mock.patch("builtins.input", return_value=""), \
+            mock.patch("main.search_shows", return_value=[]) as search:
+        main.show_search()
+    search.assert_called_once_with("the office")
+
+
 def test_an_unknown_show_id_is_none():
     with mock.patch("main.requests.get", return_value=fake_response(status=404)):
         assert main.get_show(999999999) is None

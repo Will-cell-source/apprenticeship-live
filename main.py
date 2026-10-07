@@ -1,7 +1,16 @@
 """Search TVmaze for TV shows and summarise episode ratings per season."""
+import json
+from pathlib import Path
+
 import requests
 
-API = "https://api.tvmaze.com"
+# Settings live in config.json, next to this file, so they can be changed
+# without editing the code. Finding it by this file's location means the app
+# works whichever folder you run it from.
+CONFIG_FILE = Path(__file__).with_name("config.json")
+with open(CONFIG_FILE) as f:
+    CONFIG = json.load(f)
+
 TIMEOUT = 10  # seconds to wait for TVmaze before giving up
 
 MENU = """
@@ -18,7 +27,8 @@ class TVMazeError(Exception):
 def get_json(path, params=None):
     """GET one TVmaze endpoint. Returns the JSON, or None for 'not found'."""
     try:
-        response = requests.get(f"{API}{path}", params=params, timeout=TIMEOUT)
+        response = requests.get(f"{CONFIG['api_url']}{path}", params=params,
+                                timeout=TIMEOUT)
     except requests.RequestException:
         raise TVMazeError("Could not reach TVmaze. Check your internet connection.")
     if response.status_code == 404:
@@ -82,10 +92,10 @@ def season_ratings(episodes):
 
 # ------------------------------------------------------------ the menu options
 def show_search():
-    query = input("Show name: ").strip()
+    default = CONFIG["default_query"]
+    query = input(f"Show name (press Enter for '{default}'): ").strip()
     if not query:
-        print("Please type a show name.")
-        return
+        query = default
     shows = search_shows(query)
     if not shows:
         print(f"No shows found for '{query}'.")
