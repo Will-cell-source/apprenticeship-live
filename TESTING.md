@@ -2,7 +2,7 @@
 
 Run these in a terminal opened in the "apprenticeship live" folder. Each step says what you should see.
 
-1. `.venv\Scripts\python -m pytest` → **10 passed**
+1. `.venv\Scripts\python -m pytest` → **9 passed**
 2. `.venv\Scripts\python main.py` → "TV show search. Data from TVmaze (tvmaze.com)." and a menu with options 1, 2 and 3
 3. Type `1`, then `friends` → a table of up to 5 shows; the first row is **431, 1994, Friends**
 4. Type `1`, then just press **Enter** → it searches the default show from `config.json` (friends), so the first row is again **431, 1994, Friends**

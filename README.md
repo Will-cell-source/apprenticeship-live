@@ -5,6 +5,6 @@ Scratch space for hands-on coding during the live apprenticeship training sessio
 .venv\Scripts\python -m pytest
 ```
 
-Settings (the TVmaze address and the default show searched when you press Enter) are in `config.json`.
+The default show searched when you press Enter is set in `config.json`.
 
 Data from [TVmaze](https://www.tvmaze.com/api).

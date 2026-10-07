@@ -4,13 +4,13 @@ from pathlib import Path
 
 import requests
 
-# Settings live in config.json, next to this file, so they can be changed
-# without editing the code. Finding it by this file's location means the app
-# works whichever folder you run it from.
+# load the config file (the default search), next to this file, so the app
+# works whichever folder you run it from
 CONFIG_FILE = Path(__file__).with_name("config.json")
 with open(CONFIG_FILE) as f:
     CONFIG = json.load(f)
 
+API = "https://api.tvmaze.com"
 TIMEOUT = 10  # seconds to wait for TVmaze before giving up
 
 MENU = """
@@ -27,8 +27,7 @@ class TVMazeError(Exception):
 def get_json(path, params=None):
     """GET one TVmaze endpoint. Returns the JSON, or None for 'not found'."""
     try:
-        response = requests.get(f"{CONFIG['api_url']}{path}", params=params,
-                                timeout=TIMEOUT)
+        response = requests.get(f"{API}{path}", params=params, timeout=TIMEOUT)
     except requests.RequestException:
         raise TVMazeError("Could not reach TVmaze. Check your internet connection.")
     if response.status_code == 404:
