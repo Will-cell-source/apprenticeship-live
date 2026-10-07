@@ -136,6 +136,7 @@ def test_an_email_that_cannot_be_sent_gives_a_short_message(capsys):
     output = capsys.readouterr()
     assert "error email could not be sent" in output.out
     assert "Traceback" not in output.err
+    assert handler.failed, "so send_test_alert.py can report the failure"
 
 
 def test_info_and_warnings_are_not_emailed():

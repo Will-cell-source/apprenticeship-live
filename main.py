@@ -32,9 +32,13 @@ class EmailHandler(SMTPHandler):
     """Emails each log line it is given. If sending fails, it says so on
     screen instead of filling the screen with an error dump."""
 
+    failed = False
+
     def handleError(self, record):
+        self.failed = True
         print("(The error email could not be sent: check the email settings "
-              "in .env and your internet connection.)")
+              "in .env (Gmail needs an App Password, not your normal "
+              "password) and your internet connection.)")
 
 
 def make_email_handler():
@@ -58,14 +62,13 @@ def make_email_handler():
 
 def setup_logging():
     """Log everything to searches.log, and email errors if .env is set up.
-    Returns True when error emails are switched on."""
+    Returns the email sender, or None when error emails are off."""
     logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format=LOG_FORMAT)
     load_dotenv(ENV_FILE)
     email = make_email_handler()
-    if email is None:
-        return False
-    logging.getLogger().addHandler(email)
-    return True
+    if email is not None:
+        logging.getLogger().addHandler(email)
+    return email
 
 MENU = """
 1. Search for a show
@@ -188,8 +191,8 @@ def show_season_ratings():
 
 
 def main():
-    emails_on = setup_logging()
-    logging.info(f"App started (error emails {'on' if emails_on else 'off'})")
+    email = setup_logging()
+    logging.info(f"App started (error emails {'on' if email else 'off'})")
     print("TV show search. Data from TVmaze (tvmaze.com).")
     while True:
         print(MENU)

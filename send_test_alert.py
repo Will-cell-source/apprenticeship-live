@@ -3,8 +3,12 @@ import logging
 
 import main
 
-if main.setup_logging():
-    logging.error("Test alert: if you got this email, error emails work.")
-    print("Test error sent. Check your inbox (and spam) in a minute.")
-else:
+email = main.setup_logging()
+if email is None:
     print("Error emails are off: fill in every setting in .env first.")
+else:
+    logging.error("Test alert: if you got this email, error emails work.")
+    if email.failed:
+        print("The test email was NOT sent (see the message above).")
+    else:
+        print("Test email sent. Check your inbox (and spam) in a minute.")

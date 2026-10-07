@@ -19,6 +19,6 @@ Run these in a terminal opened in the "apprenticeship live" folder. Each step sa
     - `WARNING - Invalid show ID entered: 'abc'`
     - `INFO - Getting ratings for show ID: 999999999` then `WARNING - TVmaze found nothing at /shows/999999999 (HTTP 404)`
     - `INFO - App closed`
-11. Only once `.env` has your email settings: `.venv\Scripts\python send_test_alert.py` → "Test error sent." and, within a minute, an email titled **TV app error** saying "Test alert: if you got this email, error emails work."
+11. Only once `.env` has your email settings: `.venv\Scripts\python send_test_alert.py` → "Test email sent." and, within a minute, an email titled **TV app error** saying "Test alert: if you got this email, error emails work."
 
 If every step matches, the app works: steps 3 to 5 test the show search (steps 3 and 4 test the two settings in `config.json`), steps 6 to 8 test the ratings-per-season feature, step 10 tests the logging, and step 11 tests the error emails. Ratings come live from TVmaze, so the averages in step 6 can move slightly over time.
