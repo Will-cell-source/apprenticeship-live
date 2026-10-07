@@ -4,8 +4,8 @@ from pathlib import Path
 
 import requests
 
-# load the config file (the default search), next to this file, so the app
-# works whichever folder you run it from
+# load the config file (the default search and how many results to list),
+# next to this file, so the app works whichever folder you run it from
 CONFIG_FILE = Path(__file__).with_name("config.json")
 with open(CONFIG_FILE) as f:
     CONFIG = json.load(f)
@@ -95,7 +95,7 @@ def show_search():
     query = input(f"Show name (press Enter for '{default}'): ").strip()
     if not query:
         query = default
-    shows = search_shows(query)
+    shows = search_shows(query, CONFIG["search_limit"])
     if not shows:
         print(f"No shows found for '{query}'.")
         return

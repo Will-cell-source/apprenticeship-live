@@ -5,6 +5,6 @@ Scratch space for hands-on coding during the live apprenticeship training sessio
 .venv\Scripts\python -m pytest
 ```
 
-The default show searched when you press Enter is set in `config.json`.
+Settings are in `config.json`: `default_query` (the show searched when you press Enter) and `search_limit` (how many results the search lists).
 
 Data from [TVmaze](https://www.tvmaze.com/api).

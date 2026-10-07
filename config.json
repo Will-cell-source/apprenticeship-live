@@ -1,3 +1,4 @@
 {
-  "default_query": "friends"
+  "default_query": "friends",
+  "search_limit": 5
 }

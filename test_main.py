@@ -54,7 +54,15 @@ def test_an_empty_search_uses_the_default_query_in_config():
             mock.patch("builtins.input", return_value=""), \
             mock.patch("main.search_shows", return_value=[]) as search:
         main.show_search()
-    search.assert_called_once_with("the office")
+    assert search.call_args.args[0] == "the office"
+
+
+def test_the_search_lists_as_many_results_as_search_limit_in_config():
+    with mock.patch.dict(main.CONFIG, {"search_limit": 3}), \
+            mock.patch("builtins.input", return_value="friends"), \
+            mock.patch("main.search_shows", return_value=[]) as search:
+        main.show_search()
+    search.assert_called_once_with("friends", 3)
 
 
 def test_an_unknown_show_id_is_none():
