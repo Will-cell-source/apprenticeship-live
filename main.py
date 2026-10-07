@@ -1,8 +1,11 @@
 """Search TVmaze for TV shows and summarise episode ratings per season."""
 import json
 import logging
+from logging.handlers import SMTPHandler
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 import requests
 
 # load the config file (the default search and how many results to list),
@@ -16,14 +19,53 @@ TIMEOUT = 10  # seconds to wait for TVmaze before giving up
 
 # the log file, next to this file: every search, and anything that goes wrong
 LOG_FILE = Path(__file__).with_name("searches.log")
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+
+# the email settings, including the password, are kept in .env, which is
+# never uploaded to GitHub
+ENV_FILE = Path(__file__).with_name(".env")
+EMAIL_SETTINGS = ("SMTP_HOST", "SMTP_PORT", "EMAIL_ADDRESS", "EMAIL_PASSWORD",
+                  "ALERT_TO")
+
+
+class EmailHandler(SMTPHandler):
+    """Emails each log line it is given. If sending fails, it says so on
+    screen instead of filling the screen with an error dump."""
+
+    def handleError(self, record):
+        print("(The error email could not be sent: check the email settings "
+              "in .env and your internet connection.)")
+
+
+def make_email_handler():
+    """An email sender for ERROR lines, or None if .env has no email settings."""
+    settings = {name: os.getenv(name) for name in EMAIL_SETTINGS}
+    if not all(settings.values()):
+        return None
+    handler = EmailHandler(
+        mailhost=(settings["SMTP_HOST"], int(settings["SMTP_PORT"])),
+        fromaddr=settings["EMAIL_ADDRESS"],
+        toaddrs=[settings["ALERT_TO"]],
+        subject="TV app error",
+        credentials=(settings["EMAIL_ADDRESS"], settings["EMAIL_PASSWORD"]),
+        secure=(),          # encrypt the connection before logging in
+        timeout=10,
+    )
+    handler.setLevel(logging.ERROR)     # only errors are emailed
+    handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    return handler
 
 
 def setup_logging():
-    logging.basicConfig(
-        filename=LOG_FILE,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
+    """Log everything to searches.log, and email errors if .env is set up.
+    Returns True when error emails are switched on."""
+    logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format=LOG_FORMAT)
+    load_dotenv(ENV_FILE)
+    email = make_email_handler()
+    if email is None:
+        return False
+    logging.getLogger().addHandler(email)
+    return True
 
 MENU = """
 1. Search for a show
@@ -146,8 +188,8 @@ def show_season_ratings():
 
 
 def main():
-    setup_logging()
-    logging.info("App started")
+    emails_on = setup_logging()
+    logging.info(f"App started (error emails {'on' if emails_on else 'off'})")
     print("TV show search. Data from TVmaze (tvmaze.com).")
     while True:
         print(MENU)

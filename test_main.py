@@ -1,4 +1,5 @@
 import logging
+import os
 from unittest import mock
 
 import pytest
@@ -81,6 +82,65 @@ def test_a_failed_request_is_logged_as_an_error(caplog):
             main.search_shows("friends")
     assert ("ERROR", "TVmaze returned HTTP 500 for /search/shows") in [
         (r.levelname, r.getMessage()) for r in caplog.records]
+
+
+FAKE_EMAIL_SETTINGS = {"SMTP_HOST": "smtp.example.test", "SMTP_PORT": "587",
+                       "EMAIL_ADDRESS": "app@example.test",
+                       "EMAIL_PASSWORD": "fake-password-for-tests",
+                       "ALERT_TO": "me@example.test"}
+
+
+def test_without_email_settings_no_emails_are_sent():
+    with mock.patch.dict(os.environ, {}, clear=True):
+        assert main.make_email_handler() is None
+
+
+def emailed(level, message):
+    """Log one line through the email handler with a fake mail server, and
+    return the fake server so a test can see what was sent."""
+    with mock.patch.dict(os.environ, FAKE_EMAIL_SETTINGS):
+        handler = main.make_email_handler()
+    logger = logging.getLogger("email-test")
+    logger.addHandler(handler)
+    try:
+        with mock.patch("smtplib.SMTP") as smtp:
+            logger.log(level, message)
+    finally:
+        logger.removeHandler(handler)
+    return smtp
+
+
+def test_an_error_is_emailed():
+    smtp = emailed(logging.ERROR, "TVmaze returned HTTP 500 for /search/shows")
+    server = smtp.return_value
+    smtp.assert_called_once_with("smtp.example.test", 587, timeout=10)
+    server.starttls.assert_called_once()
+    server.login.assert_called_once_with("app@example.test",
+                                         "fake-password-for-tests")
+    [sent] = server.send_message.call_args.args
+    assert sent["To"] == "me@example.test"
+    assert sent["Subject"] == "TV app error"
+    assert "TVmaze returned HTTP 500" in sent.get_content()
+
+
+def test_an_email_that_cannot_be_sent_gives_a_short_message(capsys):
+    with mock.patch.dict(os.environ, FAKE_EMAIL_SETTINGS):
+        handler = main.make_email_handler()
+    logger = logging.getLogger("email-test")
+    logger.addHandler(handler)
+    try:
+        with mock.patch("smtplib.SMTP", side_effect=OSError("no connection")):
+            logger.error("TVmaze returned HTTP 500 for /search/shows")
+    finally:
+        logger.removeHandler(handler)
+    output = capsys.readouterr()
+    assert "error email could not be sent" in output.out
+    assert "Traceback" not in output.err
+
+
+def test_info_and_warnings_are_not_emailed():
+    for level in (logging.INFO, logging.WARNING):
+        assert not emailed(level, "Searching for TV show: friends").called
 
 
 def test_an_unknown_show_id_is_none():
