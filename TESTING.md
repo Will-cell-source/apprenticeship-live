@@ -2,7 +2,7 @@
 
 Run these in a terminal opened in the "apprenticeship live" folder. Each step says what you should see.
 
-1. `.venv\Scripts\python -m pytest` → **16 passed**
+1. `.venv\Scripts\python -m pytest` → **27 passed**
 2. `.venv\Scripts\python main.py` → "TV show search. Data from TVmaze (tvmaze.com)." and a menu with options 1, 2 and 3
 3. Type `1`, then `friends` → a table of **5 shows** (the `search_limit` in `config.json`); the first row is **431, 1994, Friends**
 4. Type `1`, then just press **Enter** → it searches the default show from `config.json` (friends), so the first row is again **431, 1994, Friends**
@@ -21,4 +21,6 @@ Run these in a terminal opened in the "apprenticeship live" folder. Each step sa
     - `INFO - App closed`
 11. Only once `.env` has your Make webhook address and the scenario is on: `.venv\Scripts\python send_test_alert.py` → "Test alert sent to Make." and, within a minute, the email your Make scenario sends, saying "Test alert: if you got this email, error alerts work."
 
-If every step matches, the app works: steps 3 to 5 test the show search (steps 3 and 4 test the two settings in `config.json`), steps 6 to 8 test the ratings-per-season feature, step 10 tests the logging, and step 11 tests the error alerts. Ratings come live from TVmaze, so the averages in step 6 can move slightly over time.
+12. `.venv\Scripts\python -m pytest test_errors.py -v` → **11 passed**, listing each type of problem by name: normal search (INFO), no shows found, show ID not a number, show ID does not exist (WARNING), no internet, TVmaze too slow, too many requests, TVmaze server error, unexpected crash (ERROR, sent to Make), plus the crash details and the app carrying on after an error
+
+If every step matches, the app works: steps 3 to 5 test the show search (steps 3 and 4 test the two settings in `config.json`), steps 6 to 8 test the ratings-per-season feature, step 10 tests the logging, step 11 tests the error alerts, and step 12 tests every type and level of error. Ratings come live from TVmaze, so the averages in step 6 can move slightly over time.
