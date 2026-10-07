@@ -1,7 +1,7 @@
 """Search TVmaze for TV shows and summarise episode ratings per season."""
+from datetime import datetime
 import json
 import logging
-from logging.handlers import SMTPHandler
 import os
 from pathlib import Path
 
@@ -21,54 +21,55 @@ TIMEOUT = 10  # seconds to wait for TVmaze before giving up
 LOG_FILE = Path(__file__).with_name("searches.log")
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 
-# the email settings, including the password, are kept in .env, which is
-# never uploaded to GitHub
+# the Make webhook address is kept in .env, which is never uploaded to GitHub:
+# anyone with the address could set off the scenario
 ENV_FILE = Path(__file__).with_name(".env")
-EMAIL_SETTINGS = ("SMTP_HOST", "SMTP_PORT", "EMAIL_ADDRESS", "EMAIL_PASSWORD",
-                  "ALERT_TO")
 
 
-class EmailHandler(SMTPHandler):
-    """Emails each log line it is given. If sending fails, it says so on
-    screen instead of filling the screen with an error dump."""
+class MakeAlertHandler(logging.Handler):
+    """Sends each ERROR line to a Make scenario's webhook, and Make emails it.
+    If sending fails, it says so on screen instead of an error dump."""
 
     failed = False
 
+    def __init__(self, url):
+        super().__init__(level=logging.ERROR)   # only errors are sent
+        self.url = url
+
+    def emit(self, record):
+        try:
+            response = requests.post(self.url, timeout=10, json={
+                "app": "TV show search",
+                "time": datetime.fromtimestamp(record.created).isoformat(" ", "seconds"),
+                "level": record.levelname,
+                "message": self.format(record),   # includes any error details
+            })
+            response.raise_for_status()
+        except Exception:
+            self.handleError(record)
+
     def handleError(self, record):
         self.failed = True
-        print("(The error email could not be sent: check the email settings "
-              "in .env (Gmail needs an App Password, not your normal "
-              "password) and your internet connection.)")
+        print("(The error alert could not be sent to Make: check "
+              "MAKE_WEBHOOK_URL in .env, that the scenario is on, and your "
+              "internet connection.)")
 
 
-def make_email_handler():
-    """An email sender for ERROR lines, or None if .env has no email settings."""
-    settings = {name: os.getenv(name) for name in EMAIL_SETTINGS}
-    if not all(settings.values()):
-        return None
-    handler = EmailHandler(
-        mailhost=(settings["SMTP_HOST"], int(settings["SMTP_PORT"])),
-        fromaddr=settings["EMAIL_ADDRESS"],
-        toaddrs=[settings["ALERT_TO"]],
-        subject="TV app error",
-        credentials=(settings["EMAIL_ADDRESS"], settings["EMAIL_PASSWORD"]),
-        secure=(),          # encrypt the connection before logging in
-        timeout=10,
-    )
-    handler.setLevel(logging.ERROR)     # only errors are emailed
-    handler.setFormatter(logging.Formatter(LOG_FORMAT))
-    return handler
+def make_alert_handler():
+    """The Make alert sender, or None if .env has no MAKE_WEBHOOK_URL."""
+    url = (os.getenv("MAKE_WEBHOOK_URL") or "").strip()
+    return MakeAlertHandler(url) if url else None
 
 
 def setup_logging():
-    """Log everything to searches.log, and email errors if .env is set up.
-    Returns the email sender, or None when error emails are off."""
+    """Log everything to searches.log, and send errors to Make if .env is set
+    up. Returns the alert sender, or None when error alerts are off."""
     logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format=LOG_FORMAT)
     load_dotenv(ENV_FILE)
-    email = make_email_handler()
-    if email is not None:
-        logging.getLogger().addHandler(email)
-    return email
+    alerts = make_alert_handler()
+    if alerts is not None:
+        logging.getLogger().addHandler(alerts)
+    return alerts
 
 MENU = """
 1. Search for a show
@@ -191,8 +192,8 @@ def show_season_ratings():
 
 
 def main():
-    email = setup_logging()
-    logging.info(f"App started (error emails {'on' if email else 'off'})")
+    alerts = setup_logging()
+    logging.info(f"App started (error alerts {'on' if alerts else 'off'})")
     print("TV show search. Data from TVmaze (tvmaze.com).")
     while True:
         print(MENU)

@@ -12,13 +12,13 @@ Run these in a terminal opened in the "apprenticeship live" folder. Each step sa
 8. Type `2`, then `999999999` → "No show has ID 999999999."
 9. Type `3` → the app closes
 10. Open `searches.log` in the folder → the lines end with these, each starting with the date and time:
-    - `INFO - App started (error emails off)`, or `(error emails on)` once `.env` is filled in
+    - `INFO - App started (error alerts off)`, or `(error alerts on)` once `.env` has your Make webhook address
     - `INFO - Searching for TV show: friends` (twice)
     - `INFO - Searching for TV show: zzqqxxnotashow` then `WARNING - No shows found for: zzqqxxnotashow`
     - `INFO - Getting ratings for show ID: 431`
     - `WARNING - Invalid show ID entered: 'abc'`
     - `INFO - Getting ratings for show ID: 999999999` then `WARNING - TVmaze found nothing at /shows/999999999 (HTTP 404)`
     - `INFO - App closed`
-11. Only once `.env` has your email settings: `.venv\Scripts\python send_test_alert.py` → "Test email sent." and, within a minute, an email titled **TV app error** saying "Test alert: if you got this email, error emails work."
+11. Only once `.env` has your Make webhook address and the scenario is on: `.venv\Scripts\python send_test_alert.py` → "Test alert sent to Make." and, within a minute, the email your Make scenario sends, saying "Test alert: if you got this email, error alerts work."
 
-If every step matches, the app works: steps 3 to 5 test the show search (steps 3 and 4 test the two settings in `config.json`), steps 6 to 8 test the ratings-per-season feature, step 10 tests the logging, and step 11 tests the error emails. Ratings come live from TVmaze, so the averages in step 6 can move slightly over time.
+If every step matches, the app works: steps 3 to 5 test the show search (steps 3 and 4 test the two settings in `config.json`), steps 6 to 8 test the ratings-per-season feature, step 10 tests the logging, and step 11 tests the error alerts. Ratings come live from TVmaze, so the averages in step 6 can move slightly over time.

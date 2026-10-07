@@ -1,14 +1,14 @@
-"""Send one test error email, to check the email settings in .env work."""
+"""Send one test error to the Make scenario, to check error alerts work."""
 import logging
 
 import main
 
-email = main.setup_logging()
-if email is None:
-    print("Error emails are off: fill in every setting in .env first.")
+alerts = main.setup_logging()
+if alerts is None:
+    print("Error alerts are off: put your Make webhook address in .env first.")
 else:
-    logging.error("Test alert: if you got this email, error emails work.")
-    if email.failed:
-        print("The test email was NOT sent (see the message above).")
+    logging.error("Test alert: if you got this email, error alerts work.")
+    if alerts.failed:
+        print("The test alert was NOT sent (see the message above).")
     else:
-        print("Test email sent. Check your inbox (and spam) in a minute.")
+        print("Test alert sent to Make. Check your email in a minute.")
